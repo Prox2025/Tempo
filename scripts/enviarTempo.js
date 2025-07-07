@@ -1,39 +1,41 @@
 const puppeteer = require('puppeteer');
-const axios = require('axios');
 
 (async () => {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
 
   try {
-    await page.goto('https://livestream.ct.ws', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(5000);
+    // 1. Acede ao servidor onde o JS e os cookies são carregados
+    await page.goto('https://livestream.ct.ws/M/data.php', { waitUntil: 'networkidle2' });
+    await page.waitForTimeout(3000); // espera 3 segundos para scripts JS carregarem
 
+    // 2. Tempo atual de Moçambique
     const mozambiqueTime = new Date().toLocaleString("pt-PT", {
-      timeZone: "Africa/Maputo"
+      timeZone: "Africa/Maputo",
+      hour12: false
     });
 
-    const cookies = await page.cookies();
-    await browser.close();
-
-    const response = await axios.post(
-      'https://livestream.ct.ws/Google drive/data.php',
-      {
-        tempo: mozambiqueTime,
-        observacao: process.env.OBSERVACAO || 'Nenhuma observação'
-      },
-      {
+    // 3. Enviar via POST diretamente do navegador (com cookies válidos)
+    const resultado = await page.evaluate(async (tempoAtual) => {
+      const response = await fetch('https://livestream.ct.ws/M/data.php', {
+        method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookies.map(c => `${c.name}=${c.value}`).join('; ')
-        }
-      }
-    );
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tempo: tempoAtual
+        })
+      });
 
-    console.log('✅ Tempo enviado:', response.status);
-  } catch (error) {
-    console.error('❌ Erro ao enviar tempo:', error.message);
+      const data = await response.json();
+      return data;
+    }, mozambiqueTime);
+
+    // 4. Exibe o resultado no terminal
+    console.log('✅ Resposta do servidor:', resultado);
+  } catch (err) {
+    console.error('❌ Erro:', err.message);
+  } finally {
     await browser.close();
-    process.exit(1);
   }
 })();

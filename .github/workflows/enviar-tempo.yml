@@ -1,0 +1,30 @@
+name: Enviar Tempo de Moçambique
+
+on:
+  workflow_dispatch:  # permite execução manual e via API
+    inputs:
+      observacao:
+        description: 'Observação (opcional)'
+        required: false
+        default: 'Executado via API'
+
+jobs:
+  enviar-tempo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v3
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Instalar dependências
+        run: npm install puppeteer axios --prefix scripts
+
+      - name: Executar script para enviar tempo
+        run: node scripts/enviarTempo.js
+        env:
+          OBSERVACAO: ${{ inputs.observacao }}

@@ -3,23 +3,25 @@ const puppeteer = require('puppeteer');
 (async () => {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // <- solução!
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   const page = await browser.newPage();
 
   try {
-    // Acessar a URL com JS injetado
+    // Acessar a URL com JavaScript e cookies
     await page.goto('https://livestream.ct.ws/M/data.php', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(3000); // esperar carregamento JS
 
-    // Obter hora local de Moçambique
+    // Esperar 3 segundos manualmente
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Tempo atual de Moçambique (UTC+2)
     const mozambiqueTime = new Date().toLocaleString("pt-PT", {
       timeZone: "Africa/Maputo",
       hour12: false
     });
 
-    // Enviar o tempo para o servidor via fetch (usando contexto do navegador)
+    // Executar fetch dentro do navegador com tempo
     const resultado = await page.evaluate(async (tempoAtual) => {
       const response = await fetch('https://livestream.ct.ws/M/data.php', {
         method: 'POST',
